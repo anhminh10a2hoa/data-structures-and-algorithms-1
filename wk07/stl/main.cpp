@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
     try {
         app.parse(argc,argv);
     } catch (const CLI::ParseError & e) {
+        cout << app.help();
         app.exit(e);
         return EXIT_FAILURE;
     }
