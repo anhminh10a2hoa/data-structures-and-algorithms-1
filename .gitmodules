@@ -1,0 +1,3 @@
+[submodule "prg1/worldmap"]
+	path = prg1/worldmap
+	url = git@course-gitlab.tuni.fi:compcs300-fall2023/worldmap.git
