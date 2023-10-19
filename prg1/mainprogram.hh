@@ -30,6 +30,7 @@
 #include <variant>
 #include <bitset>
 #include <cassert>
+#include <cstring>
 
 #include "datastructures.hh"
 
