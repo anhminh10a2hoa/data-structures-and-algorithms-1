@@ -15,20 +15,22 @@ using namespace std;
  * @param v vector to be sorted
  * @return int EXIT_SUCCESS if everything went OK, EXIT_FAILURE otherwise
  */
-int sortMod3(std::vector<int>& v)
-{
+bool divthree(int i) {
+    return (i % 3) == 0;
+}
+bool divisone(int i) {
+    return (i % 3) == 1;
+}
+
+int sortMod3(std::vector < int > & v) {
     try {
-        std::partition(v.begin(), v.end(), [](int i) { return (i % 3) == 0; });
-        std::partition(v.begin(), v.end(), [](int i) { return (i % 3) == 1; });
-
-        std::sort(v.begin(), v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 0; }));
-        std::sort(v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 0; }),
-                  v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 1; }));
-        std::sort(v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 1; }), v.end());
-
+        auto split = partition(v.begin(), v.end(), divthree);
+        auto delimit = partition(split, v.end(), divisone);
+        sort(v.begin(), split);
+        sort(split, delimit);
+        sort(delimit, v.end());
         return EXIT_SUCCESS;
-    } catch (const std::exception& e) {
+    } catch (const std::exception & e) {
         return EXIT_FAILURE;
     }
 }
-
