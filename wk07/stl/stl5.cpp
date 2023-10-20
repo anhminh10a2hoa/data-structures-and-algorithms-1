@@ -17,6 +17,18 @@ using namespace std;
  */
 int sortMod3(std::vector<int>& v)
 {
-    return EXIT_FAILURE;
+    try {
+        std::partition(v.begin(), v.end(), [](int i) { return (i % 3) == 0; });
+        std::partition(v.begin(), v.end(), [](int i) { return (i % 3) == 1; });
+
+        std::sort(v.begin(), v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 0; }));
+        std::sort(v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 0; }),
+                  v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 1; }));
+        std::sort(v.begin() + std::count_if(v.begin(), v.end(), [](int i) { return (i % 3) == 1; }), v.end());
+
+        return EXIT_SUCCESS;
+    } catch (const std::exception& e) {
+        return EXIT_FAILURE;
+    }
 }
 
