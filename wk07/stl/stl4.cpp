@@ -16,13 +16,13 @@ using namespace std;
  */
 std::vector<int>::reverse_iterator findLastEven(std::vector<int>& v)
 {
-  auto last = std::find_if(v.rbegin(), v.rend(), [](auto i) {
-      return i % 2 == 0;
-  });
-  if (last != v.rend()) {
-      return last;
-  } else {
-      return v.rend();
-  }
+    auto last = std::find_if(v.rbegin(), v.rend(), [](auto i) {
+        return i % 2 == 0;
+    });
+    if (last != v.rend()) {
+        return last;
+    } else {
+        return v.rend();
+    }
 }
 
