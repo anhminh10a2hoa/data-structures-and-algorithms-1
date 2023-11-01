@@ -1431,7 +1431,7 @@ bool MainProgram::command_parse_line(string inputline, ostream& output)
             {
                 assert(!match2.empty());
 
-                Stopwatch stopwatch;
+                Stopwatch stopwatch(true);
                 bool use_stopwatch = (stopwatch_mode != StopwatchMode::OFF);
                 // Reset stopwatch mode if only for the next command
                 if (stopwatch_mode == StopwatchMode::NEXT) { stopwatch_mode = StopwatchMode::OFF; }
@@ -1528,7 +1528,12 @@ bool MainProgram::command_parse_line(string inputline, ostream& output)
 
                 if (use_stopwatch)
                 {
-                    output << "Command '" << cmd << "': " << stopwatch.elapsed() << " sec" << endl;
+                    output << "Command '" << cmd << "': " << stopwatch.elapsed() << " sec";
+#ifdef USE_PERF_EVENT
+                    auto totalcount = stopwatch.count();
+                    output << ", cmds (count): " << totalcount;
+#endif
+                    output << endl;
                 }
 
                 if (test_status_ != TestStatus::NOT_RUN)
