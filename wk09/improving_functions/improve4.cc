@@ -23,12 +23,24 @@ using RNG = std::default_random_engine;
 void randomizedThreePartQuicksort(iter begin, iter end, RNG& rng)
 {
     if (begin == end) return;
-    std::shuffle(begin, end, rng);
-    auto pivot = *(begin + (end - begin)/2);
+
+    // Choose a pivot using the median-of-three method
+    iter first = begin;
+    iter middle = begin + (end - begin) / 2;
+    iter last = end - 1;
+
+    // Ensure first < middle < last
+    if (*first > *middle) std::swap(*first, *middle);
+    if (*first > *last) std::swap(*first, *last);
+    if (*middle > *last) std::swap(*middle, *last);
+
+    auto pivot = *middle;
+
     iter middle1 = std::partition(begin, end,
-        [pivot](int val){ return val < pivot; });
+        [pivot](int val) { return val < pivot; });
     iter middle2 = std::partition(middle1, end,
-        [pivot](int val){ return !(pivot < val); });
+        [pivot](int val) { return !(pivot < val); });
+
     randomizedThreePartQuicksort(begin, middle1, rng);
     randomizedThreePartQuicksort(middle2, end, rng);
 }
