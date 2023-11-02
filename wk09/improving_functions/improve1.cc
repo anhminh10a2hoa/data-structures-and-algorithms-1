@@ -11,8 +11,6 @@
  */
 std::vector<int> ascendingVector(int n){
     std::vector<int> v;
-    for ( int i = 0; i < n ; i++){
-        v.push_back(i);
-    }
+    std::iota(v.begin(), v.end(), 0);
     return v;
 }
