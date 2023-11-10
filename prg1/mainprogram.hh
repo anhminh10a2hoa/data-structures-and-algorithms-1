@@ -186,8 +186,8 @@ private:
 
     inline Coord get_random_coords(const Coord min = RANDOM_MIN_COORD, const Coord max = RANDOM_MAX_COORD);
     inline Year get_random_year(const Year min = RANDOM_MIN_YEAR, const Year max = RANDOM_MAX_YEAR);
-
-    void add_random_affiliations_publications(unsigned int size, Coord min = RANDOM_MIN_COORD, Coord max = RANDOM_MAX_COORD);
+    std::vector<Coord> get_unique_coords(const unsigned int n,const std::unordered_set<Coord,CoordHash>& exclude_list,const Coord min=RANDOM_MIN_COORD,const Coord max=RANDOM_MAX_COORD);
+    void add_random_affiliations_publications(unsigned int size, Coord min = RANDOM_MIN_COORD, Coord max = RANDOM_MAX_COORD,const std::vector<Coord>& coordinates={});
     Distance calc_distance(Coord c1, Coord c2);
     std::string print_affiliation(AffiliationID id, std::ostream& output, bool nl = true);
     std::string print_affiliation_brief(AffiliationID id, std::ostream& output, bool nl = true);

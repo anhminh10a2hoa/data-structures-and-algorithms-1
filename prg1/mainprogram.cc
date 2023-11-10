@@ -431,17 +431,31 @@ void MainProgram::test_remove_affiliation()
     }
 }
 
-void MainProgram::add_random_affiliations_publications(unsigned int size, Coord min, Coord max)
+void MainProgram::add_random_affiliations_publications(unsigned int size, Coord min, Coord max, const std::vector<Coord> &coordinates)
 {
-    for (unsigned int i = 0; i < size; ++i)
-    {
-        auto name = n_to_name(random_affiliations_added_);
-        AffiliationID id = n_to_affiliationid(random_affiliations_added_);
+    if(coordinates.size()!=size){
+        for (unsigned int i = 0; i < size; ++i)
+        {
+            auto name = n_to_name(random_affiliations_added_);
+            AffiliationID id = n_to_affiliationid(random_affiliations_added_);
 
-        ds_.add_affiliation(id, name, get_random_coords(min, max));
+            ds_.add_affiliation(id, name, get_random_coords(min, max));
 
-        ++random_affiliations_added_;
+            ++random_affiliations_added_;
+        }
+    } else {
+        for (unsigned int i = 0; i < size; ++i)
+        {
+            auto name = n_to_name(random_affiliations_added_);
+            AffiliationID id = n_to_affiliationid(random_affiliations_added_);
+
+            ds_.add_affiliation(id, name, coordinates.at(i));
+
+            ++random_affiliations_added_;
+        }
     }
+
+
     for (unsigned int i = 0; i< size; ++i) {
         auto publicationid = n_to_publicationid(random_publications_added_);
 
@@ -475,6 +489,11 @@ MainProgram::CmdResult MainProgram::cmd_random_affiliations(ostream& output, Mat
 
     Coord min = RANDOM_MIN_COORD;
     Coord max = RANDOM_MAX_COORD;
+    std::unordered_set<Coord,CoordHash> exclude_list;
+    auto affiliations = ds_.get_all_affiliations();
+    for(const auto& affid : affiliations){
+        exclude_list.insert(ds_.get_affiliation_coord(affid));
+    }
     if (!minxstr.empty() && !minystr.empty() && !maxxstr.empty() && !maxystr.empty())
     {
         min.x = convert_string_to<unsigned int>(minxstr);
@@ -484,15 +503,15 @@ MainProgram::CmdResult MainProgram::cmd_random_affiliations(ostream& output, Mat
     }
     else
     {
-        auto affiliations = ds_.get_all_affiliations();
-        if (!affiliations.empty())
+        if (!exclude_list.empty())
         {
             // Find out the min and max coordinates current affiliations reside within -> generates more data within the same region
             min = {std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
             max = {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()};
-            for (auto const& affiliation : affiliations)
+            for (auto const& coord : exclude_list)
             {
-                auto [x,y] = ds_.get_affiliation_coord(affiliation);
+                auto x = coord.x;
+                auto y = coord.y;
                 if (x < min.x) { min.x = x; }
                 if (y < min.y) { min.y = y; }
                 if (x > max.x) { max.x = x; }
@@ -501,7 +520,14 @@ MainProgram::CmdResult MainProgram::cmd_random_affiliations(ostream& output, Mat
         }
     }
 
-    add_random_affiliations_publications(size, min, max);
+    std::vector<Coord> unique_new_coords;
+    try {
+        unique_new_coords = get_unique_coords(size,exclude_list,min,max);
+    } catch (...) {
+        output << "Impossible to create such number of unique coordinates within perimeters" <<endl;
+        return{};
+    }
+    add_random_affiliations_publications(size, min, max, unique_new_coords);
 
     output << "Added: " << size << " affiliations and publications." << endl;
 
@@ -584,6 +610,47 @@ Coord MainProgram::get_random_coords(const Coord min, const Coord max)
 Year MainProgram::get_random_year(const Year min, const Year max)
 {
     return random<int>(min, max);
+}
+
+std::vector<Coord> MainProgram::get_unique_coords(const unsigned int n, const std::unordered_set<Coord, CoordHash> &exclude_list, const Coord min, const Coord max)
+{
+    const unsigned int max_unique_coords=abs(max.x-min.x)*abs(max.y-min.y)-exclude_list.size();
+    if(n>max_unique_coords){
+        throw NotImplemented("Impossible to create such number of unique coordinates within perimeters");
+    }
+    //assert(n<max_unique_coords&&"Impossible to create such number of unique coordinates within perimeters");
+
+    if(n>max_unique_coords/2){
+        // let's not use the lottery in this case, let's list the coordinates not in use
+        std::vector<Coord> retvec;
+        retvec.reserve(max_unique_coords);
+        for(auto x = min.x; x<max.x;++x){
+            for(auto y=min.y;y<max.y;++y){
+                Coord newCoord ={x,y};
+                if(exclude_list.find(newCoord)==exclude_list.end()){
+                    retvec.push_back(newCoord);
+                }
+            }
+        }
+        // and get the required number of random_coordinates
+        std::shuffle(retvec.begin(),retvec.end(),rand_engine_);
+        retvec.erase(std::next(retvec.begin(),n),retvec.end());
+        return retvec;
+    } else {
+        std::unordered_set<Coord,CoordHash> coords;
+
+        coords.reserve(n);
+        while(coords.size()<n){
+            Coord newCoord = get_random_coords(min, max);
+            if(exclude_list.find(newCoord)==exclude_list.end()){
+                coords.insert(newCoord);
+            }
+        }
+        std::vector<Coord> retvec(coords.begin(),coords.end());
+        return retvec;
+    }
+
+
 }
 
 MainProgram::CmdResult MainProgram::cmd_get_affiliation_count(ostream& output, MatchIter begin, MatchIter end)
@@ -1291,12 +1358,15 @@ MainProgram::CmdResult MainProgram::cmd_perftest(std::ostream& output, MatchIter
             init_primes();
 
             Stopwatch stopwatch(true); // Use also instruction counting, if enabled
-
+            std::unordered_set<Coord,CoordHash> exclude_list;
+            std::vector<Coord> unique_coords = get_unique_coords(n,exclude_list,RANDOM_MIN_COORD,RANDOM_MAX_COORD);
             // Add random affiliations
-            for (unsigned int i = 0; i < n / 1000; ++i)
+            std::vector<Coord>::iterator start_of_range=unique_coords.begin();
+            for (unsigned int i = 0; i < n / 1000; ++i,std::advance(start_of_range,1000))
             {
+                std::vector<Coord> vector_slice(start_of_range,std::next(start_of_range,1000));
                 stopwatch.start();
-                add_random_affiliations_publications(1000);
+                add_random_affiliations_publications(1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
                 stopwatch.stop();
 
                 if (stopwatch.elapsed() >= timeout)
@@ -1316,8 +1386,9 @@ MainProgram::CmdResult MainProgram::cmd_perftest(std::ostream& output, MatchIter
 
             if (n % 1000 != 0)
             {
+                std::vector<Coord> vector_slice(start_of_range,unique_coords.end());
                 stopwatch.start();
-                add_random_affiliations_publications(n % 1000);
+                add_random_affiliations_publications(n % 1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
                 stopwatch.stop();
             }
 
