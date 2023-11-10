@@ -31,6 +31,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <unordered_set>
 
 #include "datastructures.hh"
 
