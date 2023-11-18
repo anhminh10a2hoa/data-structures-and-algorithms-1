@@ -92,10 +92,11 @@ private:
     enum class StopwatchMode { OFF, ON, NEXT };
     StopwatchMode stopwatch_mode = StopwatchMode::OFF;
 
-    enum class ResultType { NOTHING, IDLIST};
+    enum class ResultType { NOTHING, IDLIST, ROUTE, CONNECTIONLIST, NEIGHBOURLIST};
     using CmdResultIDs = std::pair<std::vector<PublicationID>, std::vector<AffiliationID>>;
-
-    using CmdResult = std::pair<ResultType, std::variant<CmdResultIDs>>;
+    using CmdResultRoute = std::vector<std::tuple<AffiliationID, Weight, AffiliationID, Distance>>;
+    using ConnectionList = std::vector<Connection>;
+    using CmdResult = std::pair<ResultType, std::variant<CmdResultIDs, CmdResultRoute, ConnectionList>>;
     CmdResult prev_result;
     bool view_dirty = true;
 
@@ -154,6 +155,14 @@ private:
     CmdResult cmd_perftest(std::ostream& output, MatchIter begin, MatchIter end);
     CmdResult cmd_comment(std::ostream& output, MatchIter begin, MatchIter end);
     CmdResult cmd_get_affiliations(std::ostream& output, MatchIter begin, MatchIter end);
+    // PRG2 command functions
+    CmdResult cmd_get_connected_affiliations(std::ostream& output, MatchIter begin, MatchIter end);
+    CmdResult cmd_get_all_connections(std::ostream& output, MatchIter begin, MatchIter end);
+    CmdResult cmd_get_any_path(std::ostream& output, MatchIter begin, MatchIter end);
+    // PRG2 optional
+    CmdResult cmd_get_path_with_least_affiliations(std::ostream& output, MatchIter begin, MatchIter end);
+    CmdResult cmd_get_path_of_least_friction(std::ostream& output, MatchIter begin, MatchIter end);
+    CmdResult cmd_get_shortest_path(std::ostream& output, MatchIter begin, MatchIter end);
 
     // random ids for perftest
     AffiliationID random_affiliation();
@@ -183,6 +192,14 @@ private:
     void test_get_affiliation_count();
     void test_get_all_publications();
     void test_add_affiliation_to_publication();
+    // prg2
+    void test_get_connected_affiliations();
+    void test_get_all_connections();
+    void test_get_any_path();
+    // prg2 optional
+    void test_get_path_with_least_affiliations();
+    void test_get_path_of_least_friction();
+    void test_get_shortest_path();
 
 
     inline Coord get_random_coords(const Coord min = RANDOM_MIN_COORD, const Coord max = RANDOM_MAX_COORD);
@@ -296,7 +313,7 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
     int ret;
 
     ret = syscall(__NR_perf_event_open, hw_event, pid, cpu,
-                  group_fd, flags);
+                   group_fd, flags);
     return ret;
 }
 }

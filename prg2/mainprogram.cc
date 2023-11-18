@@ -186,7 +186,7 @@ MainProgram::CmdResult MainProgram::cmd_get_publications_after(std::ostream &out
     assert( begin == end && "Impossible number of parameters!");
 
     auto publications = ds_.get_publications_after(affiliationid, time);
-
+    
     if (publications.size() == 1 && publications.front() == std::make_pair(NO_YEAR, NO_PUBLICATION))
     {
         output << "No such publications found (NO_YEAR, NO_PUBLICATION returned)" << endl;
@@ -600,6 +600,55 @@ void MainProgram::test_add_affiliation_to_publication()
     }
 }
 
+void MainProgram::test_get_connected_affiliations()
+{
+    if (random_publications_added_ > 0 ){
+        auto affiliationid = random_affiliation();
+        ds_.get_connected_affiliations(affiliationid);
+    }
+}
+
+void MainProgram::test_get_all_connections()
+{
+    ds_.get_all_connections();
+}
+
+void MainProgram::test_get_any_path()
+{
+    if (random_publications_added_ > 0 ){
+        auto fromid = random_affiliation();
+        auto toid = random_affiliation();
+        ds_.get_any_path(fromid, toid);
+    }
+}
+
+void MainProgram::test_get_path_with_least_affiliations()
+{
+    if (random_publications_added_ > 0 ){
+        auto fromid = random_affiliation();
+        auto toid = random_affiliation();
+        ds_.get_path_with_least_affiliations(fromid, toid);
+    }
+}
+
+void MainProgram::test_get_path_of_least_friction()
+{
+    if (random_publications_added_ > 0 ){
+        auto fromid = random_affiliation();
+        auto toid = random_affiliation();
+        ds_.get_path_of_least_friction(fromid, toid);
+    }
+}
+
+void MainProgram::test_get_shortest_path()
+{
+    if (random_publications_added_ > 0 ){
+        auto fromid = random_affiliation();
+        auto toid = random_affiliation();
+        ds_.get_shortest_path(fromid, toid);
+    }
+}
+
 Coord MainProgram::get_random_coords(const Coord min, const Coord max)
 {
     int x = random<int>(min.x, max.x);
@@ -909,7 +958,110 @@ MainProgram::CmdResult MainProgram::cmd_get_affiliations(std::ostream &output, M
     return {ResultType::IDLIST, CmdResultIDs{{pubid},affiliations}};
 }
 
+MainProgram::CmdResult MainProgram::cmd_get_connected_affiliations(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    auto affid = convert_string_to<AffiliationID>(*begin++);
+    assert( begin == end && "Impossible number of parameters!");
+    auto connections = ds_.get_connected_affiliations(affid);
 
+    if (connections.empty()){
+        output << "No connections from " <<affid<<"!"<< endl;
+        return {};
+    }
+    std::sort(connections.begin(),connections.end(),[](auto& c1, auto& c2){return c1.weight == c2.weight ? (c1.aff2 <c2.aff2) : c1.weight > c2.weight;});
+    return {ResultType::NEIGHBOURLIST,connections};
+}
+
+MainProgram::CmdResult MainProgram::cmd_get_all_connections(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    assert( begin == end && "Impossible number of parameters!");
+    auto connections = ds_.get_all_connections();
+    if (connections.empty()){
+        output << "No connections!" << endl;
+        return {};
+    }
+    std::sort(connections.begin(),connections.end(),[](auto& c1, auto& c2){return c1.weight != c2.weight ? c1.weight > c2.weight : (c1.aff1 == c2.aff1 ? c1.aff2 < c2.aff2 : c1.aff1<c2.aff1);});
+    return {ResultType::CONNECTIONLIST,connections};
+}
+
+MainProgram::CmdResult MainProgram::cmd_get_any_path(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    auto sourceid = convert_string_to<AffiliationID>(*begin++);
+    auto targetid = convert_string_to<AffiliationID>(*begin++);
+    assert( begin == end && "Impossible number of parameters!");
+    auto route = ds_.get_any_path(sourceid, targetid);
+    CmdResultRoute path;
+    if (route.empty())
+    {
+        output << "No route found! (empty route returned)" << endl;
+    }
+    else {
+        Distance distance = 0;
+        std::transform(route.begin(),route.end(),std::back_inserter(path),[&distance](auto& connection){
+            return std::tuple<AffiliationID, Weight, AffiliationID, Distance>(connection.aff1,connection.weight,connection.aff2,++distance);
+        });
+    }
+    return {ResultType::ROUTE, path};
+}
+
+MainProgram::CmdResult MainProgram::cmd_get_path_with_least_affiliations(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    auto sourceid = convert_string_to<AffiliationID>(*begin++);
+    auto targetid = convert_string_to<AffiliationID>(*begin++);
+    assert( begin == end && "Impossible number of parameters!");
+    auto route = ds_.get_path_with_least_affiliations(sourceid, targetid);
+    CmdResultRoute path;
+    if (route.empty())
+    {
+        output << "No route found! (empty route returned)" << endl;
+    }
+    else {
+        Distance distance = 0;
+        std::transform(route.begin(),route.end(),std::back_inserter(path),[&distance](auto& connection){
+            return std::tuple<AffiliationID, Weight, AffiliationID, Distance>(connection.aff1,connection.weight,connection.aff2,++distance);
+        });
+    }
+    return {ResultType::ROUTE, path};
+}
+
+MainProgram::CmdResult MainProgram::cmd_get_path_of_least_friction(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    auto sourceid = convert_string_to<AffiliationID>(*begin++);
+    auto targetid = convert_string_to<AffiliationID>(*begin++);
+    assert( begin == end && "Impossible number of parameters!");
+    auto route = ds_.get_path_of_least_friction(sourceid, targetid);
+    CmdResultRoute path;
+    if (route.empty())
+    {
+        output << "No route found! (empty route returned)" << endl;
+    }
+    else {
+        Distance distance = 0;
+        std::transform(route.begin(),route.end(),std::back_inserter(path),[&distance](auto& connection){
+            return std::tuple<AffiliationID, Weight, AffiliationID, Distance>(connection.aff1,connection.weight,connection.aff2,++distance);
+        });
+    }
+    return {ResultType::ROUTE, path};
+}
+
+MainProgram::CmdResult MainProgram::cmd_get_shortest_path(std::ostream &output, MatchIter begin, MatchIter end)
+{
+    auto sourceid = convert_string_to<AffiliationID>(*begin++);
+    auto targetid = convert_string_to<AffiliationID>(*begin++);
+    assert( begin == end && "Impossible number of parameters!");
+    auto route = ds_.get_shortest_path(sourceid, targetid);
+    CmdResultRoute path;
+    if (route.empty())
+    {
+        output << "No route found! (empty route returned)" << endl;
+    }
+    else {
+        std::transform(route.begin(),route.end(),std::back_inserter(path),[](auto& connection){
+            return std::tuple<AffiliationID, Weight, AffiliationID, Distance>(connection.first.aff1,connection.first.weight,connection.first.aff2,connection.second);
+        });
+    }
+    return {ResultType::ROUTE, path};
+}
 
 AffiliationID MainProgram::random_affiliation()
 {
@@ -1225,45 +1377,54 @@ string const wsx = "[[:space:]]+";
 
 
 vector<MainProgram::CmdInfo> MainProgram::cmds_ =
-    {
-        {"get_affiliation_count", "", "", &MainProgram::cmd_get_affiliation_count, &MainProgram::test_get_affiliation_count },
-        {"clear_all", "", "", &MainProgram::cmd_clear_all, nullptr }, // clear all probably shouldn't be perftested since it will ... clear everything
-        {"get_all_affiliations", "", "", &MainProgram::cmd_get_all_affiliations, &MainProgram::NoParListTestCmd<&Datastructures::get_all_affiliations>},
-        {"add_affiliation", "AffiliationID \"Name\" (x,y)", affiliationidx+wsx+'"'+namex+'"'+wsx+coordx, &MainProgram::cmd_add_affiliation, nullptr }, // tested within each perftest, separate perftesting not necessary
-        {"affiliation_info", "AffiliationID", affiliationidx, &MainProgram::cmd_affiliation_info, &MainProgram::test_affiliation_info },
-        {"get_affiliations_alphabetically", "", "", &MainProgram::NoParListCmd<&Datastructures::get_affiliations_alphabetically>, &MainProgram::NoParListTestCmd<&Datastructures::get_affiliations_alphabetically> },
-        {"get_affiliations_distance_increasing", "", "", &MainProgram::NoParListCmd<&Datastructures::get_affiliations_distance_increasing>,
-         &MainProgram::NoParListTestCmd<&Datastructures::get_affiliations_distance_increasing> },
-        {"find_affiliation_with_coord", "(x,y)", coordx, &MainProgram::cmd_find_affiliation_with_coord, &MainProgram::test_find_affiliation_with_coord },
-        {"change_affiliation_coord", "AffiliationID (x,y)", affiliationidx+wsx+coordx, &MainProgram::cmd_change_affiliation_coord, &MainProgram::test_change_affiliation_coord },
-        {"get_publications_after", "AffiliationID Time", affiliationidx+wsx+timex, &MainProgram::cmd_get_publications_after, &MainProgram::test_get_publications_after },
-        {"add_publication", "PublicationID \"Name\" Year AffiliationID AffiliationID ...", publicationidx+wsx+'"'+namex+'"'+wsx+timex+"((?:"+wsx+affiliationlistx+")*)", &MainProgram::cmd_add_publication, nullptr }, // tested within each perftest, separate perftesting not necessary
-        {"get_all_publications", "", "", &MainProgram::cmd_get_all_publications, &MainProgram::test_get_all_publications},
-        {"publication_info", "PublicationID", publicationidx, &MainProgram::cmd_publication_info, &MainProgram::test_publication_info },
-        {"add_reference", "PublicationID parentPublicationID", publicationidx+wsx+publicationidx, &MainProgram::cmd_add_reference, nullptr },
-        {"add_affiliation_to_publication", "AffiliationID PublicationID", affiliationidx+wsx+publicationidx, &MainProgram::cmd_add_affiliation_to_publication, &MainProgram::test_add_affiliation_to_publication},
-        {"get_publications", "AffiliationID", affiliationidx, &MainProgram::cmd_get_publications, &MainProgram::test_get_publications },
-        {"get_all_references", "PublicationID", publicationidx, &MainProgram::cmd_get_all_references, &MainProgram::test_get_all_references },
-        {"get_affiliations_closest_to", "(x,y)", coordx, &MainProgram::cmd_get_affiliations_closest_to, &MainProgram::test_affiliations_closest_to },
-        {"remove_affiliation", "AffiliationID", affiliationidx, &MainProgram::cmd_remove_affiliation, &MainProgram::test_remove_affiliation },
-        {"get_closest_common_parent", "PublicationID1 PublicationID2", publicationidx+wsx+publicationidx, &MainProgram::cmd_get_closest_common_parent, &MainProgram::test_get_closest_common_parent },
-        {"quit", "", "", nullptr, nullptr },
-        {"help", "", "", &MainProgram::help_command, nullptr },
-        {"random_add", "number_of_affiliations_to_add  (minx,miny) (maxx,maxy) (coordinates optional)",
-         numx+"(?:"+wsx+coordx+wsx+coordx+")?", &MainProgram::cmd_random_affiliations, &MainProgram::test_random_affiliations },
-        {"read", "\"in-filename\" [silent]", "\"([-a-zA-Z0-9 ./:_]+)\"(?:"+wsx+"(silent))?", &MainProgram::cmd_read, nullptr },
-        {"testread", "\"in-filename\" \"out-filename\"", "\"([-a-zA-Z0-9 ./:_]+)\""+wsx+"\"([-a-zA-Z0-9 ./:_]+)\"", &MainProgram::cmd_testread, nullptr },
-        {"perftest", "cmd1[;cmd2...] timeout repeat_count n1[;n2...] (parts in [] are optional, alternatives separated by |)",
-         "([0-9a-zA-Z_]+(?:;[0-9a-zA-Z_]+)*)"+wsx+numx+wsx+numx+wsx+"([0-9]+(?:;[0-9]+)*)", &MainProgram::cmd_perftest, nullptr },
-        {"stopwatch", "on|off|next (alternatives separated by |)", "(?:(on)|(off)|(next))", &MainProgram::cmd_stopwatch, nullptr },
-        {"random_seed", "new-random-seed-integer", numx, &MainProgram::cmd_randseed, nullptr },
-        {"#", "comment text", ".*", &MainProgram::cmd_comment, nullptr },
-        {"remove_publication","PublicationID",publicationidx, &MainProgram::cmd_remove_publication, &MainProgram::test_remove_publication},
-        {"get_parent","PublicationID",publicationidx,&MainProgram::cmd_get_parent, &MainProgram::test_get_parent},
-        {"get_referenced_by_chain","PublicationID",publicationidx,&MainProgram::cmd_get_referenced_by_chain,&MainProgram::test_get_referenced_by_chain},
-        {"get_affiliations", "PublicationID", publicationidx, &MainProgram::cmd_get_affiliations, &MainProgram::test_get_affiliations},
-        {"get_direct_references", "PublicationID", publicationidx, &MainProgram::cmd_get_direct_references, &MainProgram::test_get_direct_references},
-        };
+{
+    {"get_affiliation_count", "", "", &MainProgram::cmd_get_affiliation_count, &MainProgram::test_get_affiliation_count },
+    {"clear_all", "", "", &MainProgram::cmd_clear_all, nullptr }, // clear all probably shouldn't be perftested since it will ... clear everything
+    {"get_all_affiliations", "", "", &MainProgram::cmd_get_all_affiliations, &MainProgram::NoParListTestCmd<&Datastructures::get_all_affiliations>},
+    {"add_affiliation", "AffiliationID \"Name\" (x,y)", affiliationidx+wsx+'"'+namex+'"'+wsx+coordx, &MainProgram::cmd_add_affiliation, nullptr }, // tested within each perftest, separate perftesting not necessary
+    {"affiliation_info", "AffiliationID", affiliationidx, &MainProgram::cmd_affiliation_info, &MainProgram::test_affiliation_info },
+    {"get_affiliations_alphabetically", "", "", &MainProgram::NoParListCmd<&Datastructures::get_affiliations_alphabetically>, &MainProgram::NoParListTestCmd<&Datastructures::get_affiliations_alphabetically> },
+    {"get_affiliations_distance_increasing", "", "", &MainProgram::NoParListCmd<&Datastructures::get_affiliations_distance_increasing>,
+     &MainProgram::NoParListTestCmd<&Datastructures::get_affiliations_distance_increasing> },
+    {"find_affiliation_with_coord", "(x,y)", coordx, &MainProgram::cmd_find_affiliation_with_coord, &MainProgram::test_find_affiliation_with_coord },
+    {"change_affiliation_coord", "AffiliationID (x,y)", affiliationidx+wsx+coordx, &MainProgram::cmd_change_affiliation_coord, &MainProgram::test_change_affiliation_coord },
+    {"get_publications_after", "AffiliationID Time", affiliationidx+wsx+timex, &MainProgram::cmd_get_publications_after, &MainProgram::test_get_publications_after },
+    {"add_publication", "PublicationID \"Name\" Year AffiliationID AffiliationID ...", publicationidx+wsx+'"'+namex+'"'+wsx+timex+"((?:"+wsx+affiliationlistx+")*)", &MainProgram::cmd_add_publication, nullptr }, // tested within each perftest, separate perftesting not necessary
+    {"get_all_publications", "", "", &MainProgram::cmd_get_all_publications, &MainProgram::test_get_all_publications},
+    {"publication_info", "PublicationID", publicationidx, &MainProgram::cmd_publication_info, &MainProgram::test_publication_info },
+    {"add_reference", "PublicationID parentPublicationID", publicationidx+wsx+publicationidx, &MainProgram::cmd_add_reference, nullptr },
+    {"add_affiliation_to_publication", "AffiliationID PublicationID", affiliationidx+wsx+publicationidx, &MainProgram::cmd_add_affiliation_to_publication, &MainProgram::test_add_affiliation_to_publication},
+    {"get_publications", "AffiliationID", affiliationidx, &MainProgram::cmd_get_publications, &MainProgram::test_get_publications },
+    {"get_all_references", "PublicationID", publicationidx, &MainProgram::cmd_get_all_references, &MainProgram::test_get_all_references },
+    {"get_affiliations_closest_to", "(x,y)", coordx, &MainProgram::cmd_get_affiliations_closest_to, &MainProgram::test_affiliations_closest_to },
+    {"remove_affiliation", "AffiliationID", affiliationidx, &MainProgram::cmd_remove_affiliation, &MainProgram::test_remove_affiliation },
+    {"get_closest_common_parent", "PublicationID1 PublicationID2", publicationidx+wsx+publicationidx, &MainProgram::cmd_get_closest_common_parent, &MainProgram::test_get_closest_common_parent },
+    {"quit", "", "", nullptr, nullptr },
+    {"help", "", "", &MainProgram::help_command, nullptr },
+    {"random_add", "number_of_affiliations_to_add  (minx,miny) (maxx,maxy) (coordinates optional)",
+     numx+"(?:"+wsx+coordx+wsx+coordx+")?", &MainProgram::cmd_random_affiliations, &MainProgram::test_random_affiliations },
+    {"read", "\"in-filename\" [silent]", "\"([-a-zA-Z0-9 ./:_]+)\"(?:"+wsx+"(silent))?", &MainProgram::cmd_read, nullptr },
+    {"testread", "\"in-filename\" \"out-filename\"", "\"([-a-zA-Z0-9 ./:_]+)\""+wsx+"\"([-a-zA-Z0-9 ./:_]+)\"", &MainProgram::cmd_testread, nullptr },
+    {"perftest", "cmd1[;cmd2...] timeout repeat_count n1[;n2...] (parts in [] are optional, alternatives separated by |)",
+     "([0-9a-zA-Z_]+(?:;[0-9a-zA-Z_]+)*)"+wsx+numx+wsx+numx+wsx+"([0-9]+(?:;[0-9]+)*)", &MainProgram::cmd_perftest, nullptr },
+    {"stopwatch", "on|off|next (alternatives separated by |)", "(?:(on)|(off)|(next))", &MainProgram::cmd_stopwatch, nullptr },
+    {"random_seed", "new-random-seed-integer", numx, &MainProgram::cmd_randseed, nullptr },
+    {"#", "comment text", ".*", &MainProgram::cmd_comment, nullptr },
+    {"remove_publication","PublicationID",publicationidx, &MainProgram::cmd_remove_publication, &MainProgram::test_remove_publication},
+    {"get_parent","PublicationID",publicationidx,&MainProgram::cmd_get_parent, &MainProgram::test_get_parent},
+    {"get_referenced_by_chain","PublicationID",publicationidx,&MainProgram::cmd_get_referenced_by_chain,&MainProgram::test_get_referenced_by_chain},
+    {"get_affiliations", "PublicationID", publicationidx, &MainProgram::cmd_get_affiliations, &MainProgram::test_get_affiliations},
+    {"get_direct_references", "PublicationID", publicationidx, &MainProgram::cmd_get_direct_references, &MainProgram::test_get_direct_references},
+    // prg2
+    {"get_connected_affiliations","AffiliationID", affiliationidx, &MainProgram::cmd_get_connected_affiliations,&MainProgram::test_get_connected_affiliations},
+    {"get_all_connections","","",&MainProgram::cmd_get_all_connections,&MainProgram::test_get_all_connections},
+    {"get_any_path", "AffiliationID AffiliationID", affiliationidx+wsx+affiliationidx,&MainProgram::cmd_get_any_path,&MainProgram::test_get_any_path},
+    // prg2 optional
+    {"get_path_with_least_affiliations", "AffiliationID AffiliationID", affiliationidx+wsx+affiliationidx,&MainProgram::cmd_get_path_with_least_affiliations,&MainProgram::test_get_path_with_least_affiliations},
+    {"get_path_of_least_friction", "AffiliationID AffiliationID", affiliationidx+wsx+affiliationidx,&MainProgram::cmd_get_path_of_least_friction,&MainProgram::test_get_path_of_least_friction},
+    {"get_shortest_path", "AffiliationID AffiliationID", affiliationidx+wsx+affiliationidx,&MainProgram::cmd_get_shortest_path,&MainProgram::test_get_shortest_path},
+
+};
 
 MainProgram::CmdResult MainProgram::help_command(std::ostream& output, MatchIter /*begin*/, MatchIter /*end*/)
 {
@@ -1283,95 +1444,146 @@ MainProgram::CmdResult MainProgram::cmd_perftest(std::ostream& output, MatchIter
 #endif // _GLIBCXX_DEBUG
 
     try {
-        // Note: everything below is indented too little by one indentation level! (because of try block above)
+    // Note: everything below is indented too little by one indentation level! (because of try block above)
 
-        string commandstr = *begin++;
-        unsigned int timeout = convert_string_to<unsigned int>(*begin++);
-        unsigned int repeat_count = convert_string_to<unsigned int>(*begin++);
-        string sizes = *begin++;
-        assert(begin == end && "Invalid number of parameters");
+    string commandstr = *begin++;
+    unsigned int timeout = convert_string_to<unsigned int>(*begin++);
+    unsigned int repeat_count = convert_string_to<unsigned int>(*begin++);
+    string sizes = *begin++;
+    assert(begin == end && "Invalid number of parameters");
 
-        vector<string> testcmds;
-        smatch scmd;
-        auto cbeg = commandstr.cbegin();
-        auto cend = commandstr.cend();
-        for ( ; regex_search(cbeg, cend, scmd, commands_regex_); cbeg = scmd.suffix().first)
+    vector<string> testcmds;
+    smatch scmd;
+    auto cbeg = commandstr.cbegin();
+    auto cend = commandstr.cend();
+    for ( ; regex_search(cbeg, cend, scmd, commands_regex_); cbeg = scmd.suffix().first)
+    {
+        testcmds.push_back(scmd[1]);
+    }
+
+
+    vector<unsigned int> init_ns;
+    smatch size;
+    auto sbeg = sizes.cbegin();
+    auto send = sizes.cend();
+    for ( ; regex_search(sbeg, send, size, sizes_regex_); sbeg = size.suffix().first)
+    {
+        init_ns.push_back(convert_string_to<unsigned int>(size[1]));
+    }
+
+    output << "Timeout for each N is " << timeout << " sec. " << endl;
+    output << "For each N perform " << repeat_count << " random command(s) from:" << endl;
+
+    // Initialize test functions
+    vector<void(MainProgram::*)()> testfuncs;
+
+    for (auto& i : testcmds)
+    {
+        auto pos = find_if(cmds_.begin(), cmds_.end(), [&i](auto const& cmd){ return cmd.cmd == i; });
+        if (pos != cmds_.end() && pos->testfunc)
         {
-            testcmds.push_back(scmd[1]);
+            output << i << " ";
+            testfuncs.push_back(pos->testfunc);
         }
-
-
-        vector<unsigned int> init_ns;
-        smatch size;
-        auto sbeg = sizes.cbegin();
-        auto send = sizes.cend();
-        for ( ; regex_search(sbeg, send, size, sizes_regex_); sbeg = size.suffix().first)
+        else
         {
-            init_ns.push_back(convert_string_to<unsigned int>(size[1]));
+            output << "(cannot test " << i << ") ";
         }
+    }
 
-        output << "Timeout for each N is " << timeout << " sec. " << endl;
-        output << "For each N perform " << repeat_count << " random command(s) from:" << endl;
+    output << endl << endl;
 
-        // Initialize test functions
-        vector<void(MainProgram::*)()> testfuncs;
+    if (testfuncs.empty())
+    {
+        output << "No commands to test!" << endl;
+        return {};
+    }
 
-        for (auto& i : testcmds)
+#ifdef USE_PERF_EVENT
+    output << setw(7) << "N" << " , " << setw(12) << "add (sec)" << " , " << setw(12) << "add (count)" << " , " << setw(12) << "cmds (sec)" << " , "
+           << setw(12) << "cmds (count)"  << " , " << setw(12) << "total (sec)" << " , " << setw(12) << "total (count)" << endl;
+#else
+    output << setw(7) << "N" << " , " << setw(12) << "add (sec)" << " , " << setw(12) << "cmds (sec)" << " , "
+           << setw(12) << "total (sec)" << endl;
+#endif
+    flush_output(output);
+
+    auto stop = false;
+    for (unsigned int n : init_ns)
+    {
+        if (stop) { break; }
+
+        output << setw(7) << n << " , " << flush;
+
+        ds_.clear_all();
+        init_primes();
+
+        Stopwatch stopwatch(true); // Use also instruction counting, if enabled
+        std::unordered_set<Coord,CoordHash> exclude_list;
+        std::vector<Coord> unique_coords = get_unique_coords(n,exclude_list,RANDOM_MIN_COORD,RANDOM_MAX_COORD);
+        // Add random affiliations
+        std::vector<Coord>::iterator start_of_range=unique_coords.begin();
+        for (unsigned int i = 0; i < n / 1000; ++i,std::advance(start_of_range,1000))
         {
-            auto pos = find_if(cmds_.begin(), cmds_.end(), [&i](auto const& cmd){ return cmd.cmd == i; });
-            if (pos != cmds_.end() && pos->testfunc)
+            std::vector<Coord> vector_slice(start_of_range,std::next(start_of_range,1000));
+            stopwatch.start();
+            add_random_affiliations_publications(1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
+            stopwatch.stop();
+
+            if (stopwatch.elapsed() >= timeout)
             {
-                output << i << " ";
-                testfuncs.push_back(pos->testfunc);
+                output << "ADD Timeout!" << endl;
+                stop = true;
+                break;
             }
-            else
+            if (check_stop())
             {
-                output << "(cannot test " << i << ") ";
+                output << "Stopped!" << endl;
+                stop = true;
+                break;
             }
         }
+        if (stop) { break; }
 
-        output << endl << endl;
-
-        if (testfuncs.empty())
+        if (n % 1000 != 0)
         {
-            output << "No commands to test!" << endl;
-            return {};
+            std::vector<Coord> vector_slice(start_of_range,unique_coords.end());
+            stopwatch.start();
+            add_random_affiliations_publications(n % 1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
+            stopwatch.stop();
         }
 
 #ifdef USE_PERF_EVENT
-        output << setw(7) << "N" << " , " << setw(12) << "add (sec)" << " , " << setw(12) << "add (count)" << " , " << setw(12) << "cmds (sec)" << " , "
-               << setw(12) << "cmds (count)"  << " , " << setw(12) << "total (sec)" << " , " << setw(12) << "total (count)" << endl;
-#else
-        output << setw(7) << "N" << " , " << setw(12) << "add (sec)" << " , " << setw(12) << "cmds (sec)" << " , "
-               << setw(12) << "total (sec)" << endl;
+        auto addcount = stopwatch.count();
 #endif
-        flush_output(output);
+        auto addsec = stopwatch.elapsed();
 
-        auto stop = false;
-        for (unsigned int n : init_ns)
+#ifdef USE_PERF_EVENT
+        output << setw(12) << addsec << " , " << setw(12) << addcount << " , " << flush;
+#else
+        output << setw(12) << addsec << " , " << flush;
+#endif
+
+        if (addsec >= timeout)
         {
-            if (stop) { break; }
+            output << "ADD Timeout!" << endl;
+            stop = true;
+            break;
+        }
 
-            output << setw(7) << n << " , " << flush;
+        stopwatch.start();
+        for (unsigned int repeat = 0; repeat < repeat_count; ++repeat)
+        {
+            auto cmdpos = random(testfuncs.begin(), testfuncs.end());
 
-            ds_.clear_all();
-            init_primes();
+            (this->**cmdpos)();
 
-            Stopwatch stopwatch(true); // Use also instruction counting, if enabled
-            std::unordered_set<Coord,CoordHash> exclude_list;
-            std::vector<Coord> unique_coords = get_unique_coords(n,exclude_list,RANDOM_MIN_COORD,RANDOM_MAX_COORD);
-            // Add random affiliations
-            std::vector<Coord>::iterator start_of_range=unique_coords.begin();
-            for (unsigned int i = 0; i < n / 1000; ++i,std::advance(start_of_range,1000))
+            if (repeat % 10 == 0)
             {
-                std::vector<Coord> vector_slice(start_of_range,std::next(start_of_range,1000));
-                stopwatch.start();
-                add_random_affiliations_publications(1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
                 stopwatch.stop();
-
                 if (stopwatch.elapsed() >= timeout)
                 {
-                    output << "ADD Timeout!" << endl;
+                    output << "Timeout!" << endl;
                     stop = true;
                     break;
                 }
@@ -1381,80 +1593,29 @@ MainProgram::CmdResult MainProgram::cmd_perftest(std::ostream& output, MatchIter
                     stop = true;
                     break;
                 }
-            }
-            if (stop) { break; }
-
-            if (n % 1000 != 0)
-            {
-                std::vector<Coord> vector_slice(start_of_range,unique_coords.end());
                 stopwatch.start();
-                add_random_affiliations_publications(n % 1000,RANDOM_MIN_COORD,RANDOM_MAX_COORD,vector_slice);
-                stopwatch.stop();
             }
-
-#ifdef USE_PERF_EVENT
-            auto addcount = stopwatch.count();
-#endif
-            auto addsec = stopwatch.elapsed();
-
-#ifdef USE_PERF_EVENT
-            output << setw(12) << addsec << " , " << setw(12) << addcount << " , " << flush;
-#else
-            output << setw(12) << addsec << " , " << flush;
-#endif
-
-            if (addsec >= timeout)
-            {
-                output << "ADD Timeout!" << endl;
-                stop = true;
-                break;
-            }
-
-            stopwatch.start();
-            for (unsigned int repeat = 0; repeat < repeat_count; ++repeat)
-            {
-                auto cmdpos = random(testfuncs.begin(), testfuncs.end());
-
-                (this->**cmdpos)();
-
-                if (repeat % 10 == 0)
-                {
-                    stopwatch.stop();
-                    if (stopwatch.elapsed() >= timeout)
-                    {
-                        output << "Timeout!" << endl;
-                        stop = true;
-                        break;
-                    }
-                    if (check_stop())
-                    {
-                        output << "Stopped!" << endl;
-                        stop = true;
-                        break;
-                    }
-                    stopwatch.start();
-                }
-            }
-            stopwatch.stop();
-            if (stop) { break; }
-
-#ifdef USE_PERF_EVENT
-            auto totalcount = stopwatch.count();
-#endif
-            auto totalsec = stopwatch.elapsed();
-
-#ifdef USE_PERF_EVENT
-            output << setw(12) << totalsec-addsec << " , " << setw(12) << totalcount-addcount << " , " << setw(12) << totalsec << " , " << setw(12) << totalcount;
-#else
-            output << setw(12) << totalsec-addsec << " , " << setw(12) << totalsec;
-#endif
-
-            output << endl;
-            flush_output(output);
         }
+        stopwatch.stop();
+        if (stop) { break; }
 
-        ds_.clear_all();
-        init_primes();
+#ifdef USE_PERF_EVENT
+        auto totalcount = stopwatch.count();
+#endif
+        auto totalsec = stopwatch.elapsed();
+
+#ifdef USE_PERF_EVENT
+        output << setw(12) << totalsec-addsec << " , " << setw(12) << totalcount-addcount << " , " << setw(12) << totalsec << " , " << setw(12) << totalcount;
+#else
+        output << setw(12) << totalsec-addsec << " , " << setw(12) << totalsec;
+#endif
+
+        output << endl;
+        flush_output(output);
+    }
+
+    ds_.clear_all();
+    init_primes();
 
     }
     catch (NotImplemented const&)
@@ -1507,8 +1668,8 @@ bool MainProgram::command_parse_line(string inputline, ostream& output)
                 // Reset stopwatch mode if only for the next command
                 if (stopwatch_mode == StopwatchMode::NEXT) { stopwatch_mode = StopwatchMode::OFF; }
 
-                TestStatus initial_status = test_status_;
-                test_status_ = TestStatus::NOT_RUN;
+               TestStatus initial_status = test_status_;
+               test_status_ = TestStatus::NOT_RUN;
 
                 if (use_stopwatch)
                 {
@@ -1533,62 +1694,130 @@ bool MainProgram::command_parse_line(string inputline, ostream& output)
 
                 switch (result.first)
                 {
-                case ResultType::NOTHING:
-                {
-                    break;
-                }
-                case ResultType::IDLIST:
-                {
-                    auto& [publications, affiliations] = std::get<CmdResultIDs>(result.second);
-                    if (affiliations.size() == 1 && affiliations.front() == NO_AFFILIATION)
+                    case ResultType::NOTHING:
                     {
-                        output << "Failed (NO_AFFILIATION returned)!" << std::endl;
+                        break;
                     }
-                    else
+                    case ResultType::IDLIST:
                     {
-                        if (!affiliations.empty())
+                        auto& [publications, affiliations] = std::get<CmdResultIDs>(result.second);
+                        if (affiliations.size() == 1 && affiliations.front() == NO_AFFILIATION)
                         {
-                            if (affiliations.size() == 1) { output << "Affiliation:" << std::endl; }
-                            else { output << "Affiliations:" << std::endl; }
-
-                            unsigned int num = 0;
-                            for (AffiliationID& id : affiliations)
+                            output << "Failed (NO_AFFILIATION returned)!" << std::endl;
+                        }
+                        else
+                        {
+                            if (!affiliations.empty())
                             {
-                                ++num;
-                                if (affiliations.size() > 1) { output << num << ". "; }
-                                else { output << "   "; }
-                                print_affiliation(id, output);
+                                if (affiliations.size() == 1) { output << "Affiliation:" << std::endl; }
+                                else { output << "Affiliations:" << std::endl; }
+
+                                unsigned int num = 0;
+                                for (AffiliationID& id : affiliations)
+                                {
+                                    ++num;
+                                    if (affiliations.size() > 1) { output << num << ". "; }
+                                    else { output << "   "; }
+                                    print_affiliation(id, output);
+                                }
                             }
                         }
-                    }
 
-                    if (publications.size() == 1 && publications.front() == NO_PUBLICATION)
-                    {
-                        output << "Failed (NO_PUBLICATION returned)!" << std::endl;
-                    }
-                    else
-                    {
-                        if (!publications.empty())
+                        if (publications.size() == 1 && publications.front() == NO_PUBLICATION)
                         {
-                            if (publications.size() == 1) { output << "Publication:" << std::endl; }
-                            else { output << "Publications:" << std::endl; }
-
-                            unsigned int num = 0;
-                            for (PublicationID id : publications)
+                            output << "Failed (NO_PUBLICATION returned)!" << std::endl;
+                        }
+                        else
+                        {
+                            if (!publications.empty())
                             {
-                                ++num;
-                                if (publications.size() > 1) { output << num << ". "; }
-                                else { output << "   "; }
-                                print_publication(id, output);
+                                if (publications.size() == 1) { output << "Publication:" << std::endl; }
+                                else { output << "Publications:" << std::endl; }
+
+                                unsigned int num = 0;
+                                for (PublicationID id : publications)
+                                {
+                                    ++num;
+                                    if (publications.size() > 1) { output << num << ". "; }
+                                    else { output << "   "; }
+                                    print_publication(id, output);
+                                }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
-                default:
-                {
-                    assert(false && "Unsupported result type!");
-                }
+                    case ResultType::ROUTE:
+                    {
+                        auto& route = std::get<CmdResultRoute>(result.second);
+                        if (!route.empty())
+                        {
+                            if (route.size() == 1 && get<0>(route.front()) == NO_AFFILIATION)
+                            {
+                                output << "Failed (...NO_AFFILIATION... returned)!" << std::endl;
+                            }
+                            else
+                            {
+                                unsigned int num = 1;
+                                for (auto& r : route)
+                                {
+                                    auto [affiliationid1, weight, affiliationid2, dist] = r;
+                                    output << num << ". ";
+                                    if (affiliationid1 != NO_AFFILIATION)
+                                    {
+                                        print_affiliation_brief(affiliationid1, output, false);
+                                    }
+                                    if (affiliationid2 != NO_AFFILIATION)
+                                    {
+                                        output << " -> ";
+                                        print_affiliation_brief(affiliationid2, output, false);
+                                    }
+                                    if (weight != NO_WEIGHT)
+                                    {
+                                        output << " (weighted " << weight << ")";
+                                    }
+                                    if (dist != NO_DISTANCE)
+                                    {
+                                        output << " (distance " << dist << ")";
+                                    }
+                                    output << endl;
+
+                                    ++num;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case ResultType::CONNECTIONLIST:{
+                        auto& list = std::get<ConnectionList>(result.second);
+                        unsigned int num = 1;
+
+                        std::for_each(list.begin(),list.end(),[&output,&num,this](auto& connection){
+                            output << num++ << ". ";
+                            print_affiliation_brief(connection.aff1 ,output,false);
+                            output << " -> ";
+                            print_affiliation_brief(connection.aff2, output, false);
+                            output <<" (weighted "<<connection.weight<<")"<<endl;
+                        });
+                        break;
+                    }
+                    case ResultType::NEIGHBOURLIST:{
+                        auto& list = std::get<ConnectionList>(result.second);
+                        auto source_id = list.front().aff1;
+                        output << "All connected affiliations from ";
+                        print_affiliation_brief(source_id,output,false);
+                        output << endl;
+                        unsigned int num = 1;
+                        std::for_each(list.begin(),list.end(),[&output,&num,this](auto& connection){
+                            output << num++ << ". ";
+                            print_affiliation_brief(connection.aff2, output, false);
+                            output <<" (weighted "<<connection.weight<<")"<<endl;
+                        });
+                        break;
+                    }
+                    default:
+                    {
+                        assert(false && "Unsupported result type!");
+                    }
                 }
 
                 if (result != prev_result)
@@ -1771,9 +2000,9 @@ Name MainProgram::n_to_name(unsigned long n)
 
 AffiliationID MainProgram::n_to_affiliationid(unsigned long n)
 {
-    std::ostringstream ostr;
-    ostr << "A" << n;
-    return ostr.str();
+ std::ostringstream ostr;
+ ostr << "A" << n;
+ return ostr.str();
 }
 
 PublicationID MainProgram::n_to_publicationid(unsigned long n)
