@@ -1,19 +1,31 @@
 // Datastructures.hh
 //
-// Student name:
-// Student email:
-// Student number:
+// Student name: Hoang Anh Minh
+// Student email: minh.hoang@tuni.fi
+// Student number: 
 
 #ifndef DATASTRUCTURES_HH
 #define DATASTRUCTURES_HH
 
 #include <string>
+#include <random>
+#include <regex>
+#include <chrono>
+#include <sstream>
+#include <stdexcept>
+#include <iostream>
 #include <vector>
-#include <tuple>
-#include <utility>
-#include <limits>
+#include <array>
 #include <functional>
-#include <exception>
+#include <utility>
+#include <variant>
+#include <bitset>
+#include <cassert>
+
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
 
 // Types for IDs
 using AffiliationID = std::string;
@@ -217,6 +229,25 @@ public:
 
 private:
 
+    struct Affiliation{
+        AffiliationID id;
+        Name name;
+        Coord xy;
+    };
+
+    struct Publication{
+        PublicationID id;
+        Name name;
+        Year year;
+        std::vector<AffiliationID> affiliations;
+        std::unordered_set<PublicationID> references;
+        Publication* parent = nullptr;
+        std::vector<Publication*> children;
+    };
+
+    std::unordered_map<AffiliationID, Affiliation> affiliations_;
+    std::unordered_map<PublicationID, Publication> publications_;
+    std::multimap<Name , AffiliationID> sorted_affiliations_by_name_;
 };
 
 #endif // DATASTRUCTURES_HH
