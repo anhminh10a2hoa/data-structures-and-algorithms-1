@@ -12,6 +12,8 @@
 
 #include <algorithm>
 
+#include <queue>
+
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
 template <typename Type>
@@ -260,29 +262,45 @@ std::vector<std::pair<Year, PublicationID> > Datastructures::get_publications_af
 
 std::vector<PublicationID> Datastructures::get_referenced_by_chain(PublicationID id) 
 {
-    auto it = publications_.find(id); // O(1)
-    if (it != publications_.end()) {
-        std::vector<PublicationID> referenced_chain;
-        std::function<void(const Publication&)> getReferences = [&](const Publication& publication) {
-            referenced_chain.push_back(publication.id);
-            for (const auto& child : publication.children) {
-                getReferences(*child);
-            }
-        };
-
-        // Check for direct references
-        for (const auto& reference : it->second.references) {
-            referenced_chain.push_back(reference);
-        }
-
-        // Check for indirect references
-        if (it->second.parent) {
-            getReferences(*(it->second.parent));
-        }
-
-        return referenced_chain;
+    // Check if the publication exists
+    auto it = publications_.find(id);
+    if (it == publications_.end())
+    {
+        // If the publication does not exist, return a vector with a single item NO_PUBLICATION
+        return {NO_PUBLICATION};
     }
-    return {NO_PUBLICATION};
+
+    // Create a vector to store the result
+    std::vector<PublicationID> result;
+
+    // Create a queue for breadth-first search
+    std::queue<Publication*> queue;
+
+    // Start from the given publication
+    queue.push(&(it->second));
+
+    // Use a set to avoid adding the same publication multiple times
+    std::unordered_set<PublicationID> visited;
+    visited.insert(id);
+
+    while (!queue.empty())
+    {
+        Publication* current = queue.front();
+        queue.pop();
+
+        // Add all children of the current publication to the queue
+        for (Publication* child : current->children)
+        {
+            if (visited.find(child->id) == visited.end())
+            {
+                result.push_back(child->id);
+                queue.push(child);
+                visited.insert(child->id);
+            }
+        }
+    }
+
+    return result;
 }
 
 std::vector<PublicationID> Datastructures::get_all_references(PublicationID /*id*/)
