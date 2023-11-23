@@ -228,26 +228,25 @@ public:
 
 
 private:
-
-    struct Affiliation{
-        AffiliationID id;
+    PublicationID NO_PARENT = -1;
+    struct Affiliation {
         Name name;
-        Coord xy;
+        Coord coord;
+        std::vector<PublicationID> publications;
     };
-
     struct Publication{
-        PublicationID id;
         Name name;
         Year year;
         std::vector<AffiliationID> affiliations;
-        std::unordered_set<PublicationID> references;
-        Publication* parent = nullptr;
-        std::vector<Publication*> children;
+        std::vector<PublicationID> references;
+        PublicationID parent;
     };
+    std::unordered_map<AffiliationID, std::shared_ptr<Affiliation>> affiliations;
+    std::unordered_map<PublicationID, std::shared_ptr<Publication>> publications;
+    std::unordered_map<Coord, std::vector<AffiliationID>, CoordHash> affiliations_by_coord;
+    std::map<Distance, std::vector<AffiliationID>> affiliations_distance_increasing;
+    std::map<Name, std::vector<AffiliationID>> affiliations_alphabetically;
 
-    std::unordered_map<AffiliationID, Affiliation> affiliations_;
-    std::unordered_map<PublicationID, Publication> publications_;
-    std::multimap<Name , AffiliationID> sorted_affiliations_by_name_;
 };
 
 #endif // DATASTRUCTURES_HH
