@@ -250,7 +250,7 @@ std::vector<std::pair<Year, PublicationID> > Datastructures::get_publications_af
         return publications_after;
     }
     for (auto it = affiliations[affiliationid]->publications.begin(); it != affiliations[affiliationid]->publications.end(); ++it) {
-        if (publications.find(*it) != publications.end() && publications[*it]->year > year) {
+        if (publications.find(*it) != publications.end() && publications[*it]->year >= year) {
             publications_after.push_back(std::make_pair(publications[*it]->year, *it));
         }
     }
