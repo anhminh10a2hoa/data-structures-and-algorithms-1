@@ -284,34 +284,124 @@ std::vector<PublicationID> Datastructures::get_referenced_by_chain(PublicationID
     return referenced_by_chain;
 }
 
-std::vector<PublicationID> Datastructures::get_all_references(PublicationID /*id*/)
+std::vector<PublicationID> Datastructures::get_all_references(PublicationID id) 
 {
-    // Replace the line below with your implementation
-    throw NotImplemented("get_all_references()");
+    std::vector<PublicationID> all_references;
+    if (publications.find(id) == publications.end()) {
+        return {NO_PUBLICATION};
+    }
+    std::vector<PublicationID> direct_references = publications[id]->references;
+    for (auto it = direct_references.begin(); it != direct_references.end(); ++it) {
+        std::vector<PublicationID> indirect_references = get_all_references(*it);
+        all_references.insert(all_references.end(), indirect_references.begin(), indirect_references.end());
+    }
+    all_references.insert(all_references.end(), direct_references.begin(), direct_references.end());
+    return all_references;
 }
 
-std::vector<AffiliationID> Datastructures::get_affiliations_closest_to(Coord /*xy*/)
+std::vector<AffiliationID> Datastructures::get_affiliations_closest_to(Coord xy) 
 {
-    // Replace the line below with your implementation
-    throw NotImplemented("get_affiliations_closest_to()");
+    std::vector<AffiliationID> closest_affiliations;
+    std::vector<AffiliationID> all_affiliations;
+    for (auto it = affiliations_by_coord.begin(); it != affiliations_by_coord.end(); ++it) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            all_affiliations.push_back(*it2);
+        }
+    }
+    std::sort(all_affiliations.begin(), all_affiliations.end(), [this, xy](AffiliationID id1, AffiliationID id2) {
+        return std::sqrt(std::pow(affiliations[id1]->coord.x - xy.x, 2) + std::pow(affiliations[id1]->coord.y - xy.y, 2)) < std::sqrt(std::pow(affiliations[id2]->coord.x - xy.x, 2) + std::pow(affiliations[id2]->coord.y - xy.y, 2));
+    });
+    if (all_affiliations.size() > 3) {
+        closest_affiliations.push_back(all_affiliations[0]);
+        closest_affiliations.push_back(all_affiliations[1]);
+        closest_affiliations.push_back(all_affiliations[2]);
+    } else {
+        closest_affiliations = all_affiliations;
+    }
+    return closest_affiliations;
 }
 
-bool Datastructures::remove_affiliation(AffiliationID /*id*/)
+bool Datastructures::remove_affiliation(AffiliationID id) 
 {
-    // Replace the line below with your implementation
-    throw NotImplemented("remove_affiliation()");
+    if (affiliations.find(id) == affiliations.end()) {
+        return false;
+    }
+    for (auto it = affiliations[id]->publications.begin(); it != affiliations[id]->publications.end(); ++it) {
+        for (auto it2 = publications[*it]->affiliations.begin(); it2 != publications[*it]->affiliations.end(); ++it2) {
+            if (*it2 == id) {
+                publications[*it]->affiliations.erase(it2);
+                break;
+            }
+        }
+    }
+    for (auto it = affiliations_by_coord.begin(); it != affiliations_by_coord.end(); ++it) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (*it2 == id) {
+                it->second.erase(it2);
+                break;
+            }
+        }
+    }
+    for (auto it = affiliations_distance_increasing.begin(); it != affiliations_distance_increasing.end(); ++it) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (*it2 == id) {
+                it->second.erase(it2);
+                break;
+            }
+        }
+    }
+    for (auto it = affiliations_alphabetically.begin(); it != affiliations_alphabetically.end(); ++it) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (*it2 == id) {
+                it->second.erase(it2);
+                break;
+            }
+        }
+    }
+    affiliations.erase(id);
+    return true;
 }
 
-PublicationID Datastructures::get_closest_common_parent(PublicationID /*id1*/, PublicationID /*id2*/)
+PublicationID Datastructures::get_closest_common_parent(PublicationID id1, PublicationID id2) 
 {
-    // Replace the line below with your implementation
-    throw NotImplemented("get_closest_common_parent()");
+    if (publications.find(id1) == publications.end() || publications.find(id2) == publications.end()) {
+        return NO_PUBLICATION;
+    }
+    std::vector<PublicationID> id1_chain = get_referenced_by_chain(id1);
+    std::vector<PublicationID> id2_chain = get_referenced_by_chain(id2);
+    for (auto it = id1_chain.begin(); it != id1_chain.end(); ++it) {
+        for (auto it2 = id2_chain.begin(); it2 != id2_chain.end(); ++it2) {
+            if (*it == *it2) {
+                return *it;
+            }
+        }
+    }
+    return NO_PUBLICATION;
 }
 
-bool Datastructures::remove_publication(PublicationID /*publicationid*/)
+bool Datastructures::remove_publication(PublicationID publicationid) 
 {
-    // Replace the line below with your implementation
-    throw NotImplemented("remove_publication()");
+    if (publications.find(publicationid) == publications.end()) {
+        return false;
+    }
+    for (auto it = publications[publicationid]->affiliations.begin(); it != publications[publicationid]->affiliations.end(); ++it) {
+        for (auto it2 = affiliations[*it]->publications.begin(); it2 != affiliations[*it]->publications.end(); ++it2) {
+            if (*it2 == publicationid) {
+                affiliations[*it]->publications.erase(it2);
+                break;
+            }
+        }
+    }
+    for (auto it = publications[publicationid]->references.begin(); it != publications[publicationid]->references.end(); ++it) {
+        for (auto it2 = publications[*it]->references.begin(); it2 != publications[*it]->references.end(); ++it2) {
+            if (*it2 == publicationid) {
+                publications[*it]->references.erase(it2);
+                break;
+            }
+        }
+    }
+    publications.erase(publicationid);
+    return true;
 }
 
 
