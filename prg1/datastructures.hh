@@ -110,7 +110,7 @@ public:
     ~Datastructures();
 
     // Estimate of performance: O(1)
-    // Short rationale for estimate:
+    // Short rationale for estimate: The function involves a constant number of operations,
     unsigned int get_affiliation_count();
 
     // Estimate of performance: O(n)
