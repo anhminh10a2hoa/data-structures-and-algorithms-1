@@ -165,7 +165,7 @@ public:
     // affiliations.
     std::vector<AffiliationID> get_affiliations_distance_increasing();
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including a lookup in the 'affiliations_by_coord' unordered_map, which is an average
     // constant time operation. Additionally, the function performs a constant time operation
