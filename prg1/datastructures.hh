@@ -246,7 +246,6 @@ private:
     std::unordered_map<Coord, std::vector<AffiliationID>, CoordHash> affiliations_by_coord;
     std::map<Distance, std::vector<AffiliationID>> affiliations_distance_increasing;
     std::map<Name, std::vector<AffiliationID>> affiliations_alphabetically;
-
 };
 
 #endif // DATASTRUCTURES_HH

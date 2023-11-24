@@ -70,7 +70,7 @@ bool Datastructures::add_affiliation(AffiliationID id, const Name &name, Coord x
     new_affiliation->coord = xy;
     affiliations[id] = new_affiliation;
     affiliations_by_coord[xy].push_back(id);
-    affiliations_distance_increasing[0].push_back(id);
+    affiliations_distance_increasing[std::sqrt(xy.x*xy.x + xy.y*xy.y)].push_back(id);
     affiliations_alphabetically[name].push_back(id);
     return true;
 }
@@ -113,15 +113,15 @@ std::vector<AffiliationID> Datastructures::get_affiliations_distance_increasing(
     return all_affiliations;
 }
 
-AffiliationID Datastructures::find_affiliation_with_coord(Coord xy) 
-{
-    if (affiliations_by_coord.find(xy) == affiliations_by_coord.end()) {
-        return NO_AFFILIATION;
+AffiliationID Datastructures::find_affiliation_with_coord(Coord xy) {
+    auto it = affiliations_by_coord.find(xy);
+    if (it != affiliations_by_coord.end() && !it->second.empty()) {
+        return it->second.front();
     }
-    return affiliations_by_coord[xy][0];
+    return NO_AFFILIATION;
 }
 
-bool Datastructures::change_affiliation_coord(AffiliationID id, Coord newcoord)
+bool Datastructures::change_affiliation_coord(AffiliationID id, Coord newcoord) 
 {
     if (affiliations.find(id) == affiliations.end()) {
         return false;
@@ -135,6 +135,15 @@ bool Datastructures::change_affiliation_coord(AffiliationID id, Coord newcoord)
         }
     }
     affiliations_by_coord[newcoord].push_back(id);
+    for (auto it = affiliations_distance_increasing.begin(); it != affiliations_distance_increasing.end(); ++it) {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            if (*it2 == id) {
+                it->second.erase(it2);
+                break;
+            }
+        }
+    }
+    affiliations_distance_increasing[std::sqrt(newcoord.x*newcoord.x + newcoord.y*newcoord.y)].push_back(id);
     return true;
 }
 
