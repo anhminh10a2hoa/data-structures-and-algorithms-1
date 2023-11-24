@@ -113,7 +113,7 @@ public:
     // Short rationale for estimate:
     unsigned int get_affiliation_count();
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The clear function for unordered_map and map
     // has a constant time complexity as it deallocates the memory used by the containers,
     // and the size of the containers does not affect the time taken for clearing.
@@ -134,14 +134,14 @@ public:
     // operations regardless of the size of the data structures.
     bool add_affiliation(AffiliationID id, Name const& name, Coord xy);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function performs a constant number of operations
     // regardless of the size of the 'affiliations' unordered_map. The lookup in the unordered_map
     // and the subsequent access to the 'name' member of the affiliated structure are both constant-time
     // operations.
     Name get_affiliation_name(AffiliationID id);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function performs a constant number of operations
     // regardless of the size of the 'affiliations' unordered_map. The lookup in the unordered_map
     // and the subsequent access to the 'coord' member of the affiliated structure are both constant-time
@@ -183,13 +183,13 @@ public:
 
     // We recommend you implement the operations below only after implementing the ones above
 
-    // Estimate of performance: O(m + k), where m is the number of affiliations and k is the number of publications
+    // Estimate of performance: O(n^2)
     // Short rationale for estimate: The function involves creating a new Publication, adding it to the 'publications'
     // unordered_map, and updating the 'publications' vector for each affiliated structure. The time complexity is
     // proportional to the number of affiliations (m) and the number of publications (k) being added.
     bool add_publication(PublicationID id, Name const& name, Year year, const std::vector<AffiliationID> & affiliations);
 
-    // Estimate of performance: O(k), where k is the number of publications
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function iterates through all elements in the 'publications'
     // unordered_map and performs a constant-time operation (push_back) for each PublicationID.
     std::vector<PublicationID> all_publications();
@@ -206,52 +206,52 @@ public:
     // of the Publication structure, both of which are constant-time operations.
     Year get_publication_year(PublicationID id);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including a lookup in the 'publications' unordered_map and access to the 'affiliations' member
     // of the Publication structure, both of which are constant-time operations.
     std::vector<AffiliationID> get_affiliations(PublicationID id);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including lookups in the 'publications' unordered_map for both the 'id' and 'parentid'
     // and updating the 'parent' member and the 'references' vector of the Publication structures,
     // all of which are constant-time operations.
     bool add_reference(PublicationID id, PublicationID parentid);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including a lookup in the 'publications' unordered_map and access to the 'references' member
     // of the Publication structure, both of which are constant-time operations.
     std::vector<PublicationID> get_direct_references(PublicationID id);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including lookups in the 'affiliations' and 'publications' unordered_maps,
     // and updating the 'affiliations' and 'publications' vectors of the respective structures,
     // all of which are constant-time operations.
     bool add_affiliation_to_publication(AffiliationID affiliationid, PublicationID publicationid);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including a lookup in the 'affiliations' unordered_map and access to the 'publications' member
     // of the Affiliation structure, both of which are constant-time operations.
     std::vector<PublicationID> get_publications(AffiliationID id);
 
-    // Estimate of performance: O(1)
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves a constant number of operations,
     // including a lookup in the 'publications' unordered_map and access to the 'parent' member
     // of the Publication structure, both of which are constant-time operations.
     PublicationID get_parent(PublicationID id);
 
-    // Estimate of performance: O(k), where k is the number of publications for the given affiliation
+    // Estimate of performance: O(n)
     // Short rationale for estimate: The function involves iterating through the 'publications' vector
     // of the specified affiliation, and for each publication, it performs constant-time operations,
     // including lookups in the 'publications' unordered_map and access to the 'year' member of the
     // Publication structure.
     std::vector<std::pair<Year, PublicationID>> get_publications_after(AffiliationID affiliationid, Year year);
 
-    // Estimate of performance: O(h * log(h)), where h is the height of the chain
+    // Estimate of performance: O(n * log(n))
     // Short rationale for estimate: The function iterates through the chain of referenced publications,
     // where the height of the chain is h. For each publication, it performs constant-time operations,
     // including lookups in the 'publications' unordered_map and access to the 'parent' member of the
