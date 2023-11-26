@@ -1,8 +1,8 @@
 // Datastructures.cc
 //
-// Student name:
-// Student email:
-// Student number:
+// Student name: Hoang Anh Minh
+// Student email: minh.hoang@tuni.fi
+// Student number: 152103143
 
 #include "datastructures.hh"
 
@@ -276,7 +276,7 @@ std::vector<PublicationID> Datastructures::get_referenced_by_chain(PublicationID
         }
 
         // Check for indirect references
-        if (it->second.parent) {
+        if (it->second.parent == id) {
             getReferences(*(it->second.parent));
         }
 
