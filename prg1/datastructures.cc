@@ -381,26 +381,33 @@ PublicationID Datastructures::get_closest_common_parent(PublicationID id1, Publi
 
 bool Datastructures::remove_publication(PublicationID publicationid) 
 {
-    if (publications.find(publicationid) == publications.end()) {
+    auto publication = publications.find(publicationid);
+    if (publication == publications.end()) {
         return false;
     }
-    for (auto it = publications[publicationid]->affiliations.begin(); it != publications[publicationid]->affiliations.end(); ++it) {
-        for (auto it2 = affiliations[*it]->publications.begin(); it2 != affiliations[*it]->publications.end(); ++it2) {
-            if (*it2 == publicationid) {
-                affiliations[*it]->publications.erase(it2);
-                break;
-            }
+
+    auto& target = publication->second;
+
+    // Remove references to the target publication
+    for (auto refID : target->references) {
+        auto refPublication = publications.find(refID);
+        if (refPublication != publications.end()) {
+            refPublication->second->parent = NO_PARENT;
         }
     }
-    for (auto it = publications[publicationid]->references.begin(); it != publications[publicationid]->references.end(); ++it) {
-        for (auto it2 = publications[*it]->references.begin(); it2 != publications[*it]->references.end(); ++it2) {
-            if (*it2 == publicationid) {
-                publications[*it]->references.erase(it2);
-                break;
-            }
+
+    // Remove the target publication from its affiliations
+    for (auto affID : target->affiliations) {
+        auto aff = affiliations.find(affID);
+        if (aff != affiliations.end()) {
+            auto& publications = aff->second->publications;
+            publications.erase(std::remove(publications.begin(), publications.end(), publicationid), publications.end());
         }
     }
+
+    // Remove the publication from the data structures
     publications.erase(publicationid);
+
     return true;
 }
 
