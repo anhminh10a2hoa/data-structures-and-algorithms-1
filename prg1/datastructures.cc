@@ -364,18 +364,21 @@ bool Datastructures::remove_affiliation(AffiliationID id)
 
 PublicationID Datastructures::get_closest_common_parent(PublicationID id1, PublicationID id2) 
 {
-    if (publications.find(id1) == publications.end() || publications.find(id2) == publications.end()) {
-        return NO_PUBLICATION;
+    auto id1_chain = get_referenced_by_chain(id1);
+    auto id2_chain = get_referenced_by_chain(id2);
+
+    auto iter1 = id1_chain.rbegin();
+    auto iter2 = id2_chain.rbegin();
+
+    while (iter1 != id1_chain.rend() && iter2 != id2_chain.rend() && *iter1 == *iter2) {
+        ++iter1;
+        ++iter2;
     }
-    std::vector<PublicationID> id1_chain = get_referenced_by_chain(id1);
-    std::vector<PublicationID> id2_chain = get_referenced_by_chain(id2);
-    for (auto it = id1_chain.begin(); it != id1_chain.end(); ++it) {
-        for (auto it2 = id2_chain.begin(); it2 != id2_chain.end(); ++it2) {
-            if (*it == *it2) {
-                return *it;
-            }
-        }
+
+    if (iter1 != id1_chain.rend()) {
+        return *iter1;
     }
+
     return NO_PUBLICATION;
 }
 
